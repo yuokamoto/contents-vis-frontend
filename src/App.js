@@ -1,6 +1,7 @@
 import React, {
   Component
 } from 'react';
+import Grid from '@material-ui/core/Grid';
 import GraphView from "./GraphView/GraphView"
 import UserDataClient from "./UserDataClient/UserDataClient"
 import SpreadSheet from "./SpreadSheet/SpreadSheet"
@@ -10,7 +11,7 @@ class App extends Component {
     super(props);
     this.state = {
       host:'http://localhost:5000',
-      userdata:{}, //list of contents and points
+      userdata:{}, //user id and list of contents and points 
       contentdata:{} //graph data, nodes and edge
     };
     this.userClientRef = React.createRef();
@@ -18,7 +19,6 @@ class App extends Component {
     this.graphRef = React.createRef();
     this.getUserDataFromUser = this.getUserDataFromUser.bind(this);
     this.getUserDataFromSpreadsheet = this.getUserDataFromSpreadsheet.bind(this);
-    this.getGraphData = this.getGraphData.bind(this);
   };
 
   // used by child component to get data
@@ -29,45 +29,58 @@ class App extends Component {
     console.log('getuserdata from user client', this.state.userdata)
 
     this.spreadSheetRef.current.setUserData(this.state.userdata['data'])
+    this.graphRef.current.setUserData(this.state.userdata['data'])
   }
 
   // used by child component to get data
   getUserDataFromSpreadsheet(data){
+    var new_data = this.state.userdata
+    new_data['data'] = data
     this.setState({
-      userdata: data
+      userdata: new_data
     })
     console.log('getuserdata from spreadhsheet', this.state.userdata)
     this.userClientRef.current.setUserData(this.state.userdata['data'])
-  }
-
-  // used by child component to get data
-  getGraphData(data){
-    this.setState({
-      contentdata: data
-    })
-    console.log('getcontentdata', this.state.contentdata)
-    this.graphRef.current.setGraphData(this.state.contentdata)
+    this.graphRef.current.setUserData(this.state.userdata['data'])
   }
 
   // todo pass state of parameter for visulize graph from /to graph to/to userclient
   
   render() {  
     return ( 
-      <div>
-        <GraphView
-          ref={this.graphRef} 
-        />
-        <UserDataClient
-          host={this.state.host}
-          getUserData={this.getUserDataFromUser}
-          ref={this.userClientRef}
-        />
-        <SpreadSheet
-          host={this.state.host}
-          getUserData={this.getUserDataFromSpreadsheet}
-          getGraphData={this.getGraphData}
-          ref={this.spreadSheetRef}
-        />
+      <div  className="fullheight">
+        <Grid container justify="center" style={{height:"100%"}}>
+
+          <Grid item xs={4}>
+            <Grid container justify="center" spacing={2}>
+
+              <Grid item xs={12}>
+                <UserDataClient
+                  host={this.state.host}
+                  getUserData={this.getUserDataFromUser}
+                  ref={this.userClientRef}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <SpreadSheet
+                  host={this.state.host}
+                  getUserData={this.getUserDataFromSpreadsheet}
+                  ref={this.spreadSheetRef}
+                />
+              </Grid>
+
+            </Grid>
+          </Grid>
+
+          <Grid item xs={8} >
+            <GraphView
+                host={this.state.host}
+                ref={this.graphRef} 
+              />
+          </Grid>
+
+        </Grid>
       </div>
     );
   }
@@ -75,3 +88,4 @@ class App extends Component {
 
 
 export default App;
+

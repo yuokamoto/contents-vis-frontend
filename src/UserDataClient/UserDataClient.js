@@ -1,13 +1,17 @@
 import React, {
   Component
 } from "react";
+import { Button, ButtonGroup, TextField } from '@material-ui/core';
+import CloudUploadIcon from '@material-ui/icons/CloudUpload';
+import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
+
 import axios from "axios";
 
 export default class UserDataClient extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      userId:'テスト',
+      userId:'5KENaHEBuOIHTk2RdJ6x',
       data:{},
     };
     this.axios = axios.create({
@@ -109,10 +113,12 @@ export default class UserDataClient extends Component {
       return (
         <div>
           User ID:
-          <input type = "text" style={{width:'20em'}} value = { this.state.userId }
+          <TextField id="outlined-basic" variant="outlined" value = { this.state.userId }
             onChange = { this.userIdChange } /> 
-          <button onClick={this.getUserData}  disabled={ (this.state.userId == '') ? true : false}>Get list</button>
-          <button onClick = { this.saveUserData }> Save list </button>           
+          <ButtonGroup orientation="horizontal">
+            <Button variant="outlined" startIcon={<CloudDownloadIcon />} onClick={this.getUserData}  disabled={ (this.state.userId == '') ? true : false}>Get list</Button>
+            <Button variant="outlined" startIcon={<CloudUploadIcon />} onClick={this.saveUserData }> Save list </Button>           
+          </ButtonGroup>
         </div>
       );
   }

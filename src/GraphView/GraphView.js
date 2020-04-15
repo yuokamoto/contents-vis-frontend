@@ -2,46 +2,61 @@ import React, {
   Component
 } from 'react';
 import Graph from "react-graph-vis";
+import { Button, ButtonGroup, TextField } from '@material-ui/core';
+import FormLabel from '@material-ui/core/FormLabel';
+import FormControl from '@material-ui/core/FormControl';
+import FormGroup from '@material-ui/core/FormGroup';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
+import FormHelperText from '@material-ui/core/FormHelperText';
+import Checkbox from '@material-ui/core/Checkbox';
 
 // import "./styles.css";
 // need to import the vis network css in order to show tooltip
 import 'vis-network/dist/vis-network.css'
+
+import axios from "axios";
+const COLORS = [
+  'rgb(201, 203, 207)', //grey
+  // 'rgb(255, 255, 255)', //white
+  'rgb(255, 99, 132)', //red
+  'rgb(255, 159, 64)', //orange
+  'rgb(255, 205, 86)', //yellow
+  'rgb(75, 192, 192)', //green
+  'rgb(54, 162, 235)', //blue
+  'rgb(153, 102, 255)',//purple
+];
+const SHAPES = [
+  'ellipse',
+  'box'
+]
+var COLOR_PATTERN = {
+  'attribute': COLORS[0],
+}
+var SHAPE_PATTERN = {
+  'attribute': SHAPES[0],
+  'program': SHAPES[1]
+}
 
 class GraphView extends Component {
   constructor(props) {
     super(props);
     this.state = {
       graph : {
-        nodes: [
-          { id: 1, label: "Node 1", title: "node 1 tootip text", color:"red", shape: "box",
-            value: 1, 
-            // size: 1,
-            // font: {
-            //   size: 1
-            // },
-          },
-          { id: 2, label: "Node 2", title: "node 2 tootip text", value: 1 },
-          { id: 3, label: "Node 3", title: "node 3 tootip text", value: 1 },
-          { id: 4, label: "Node 4", title: "node 4 tootip text", value: 1 },
-          { id: 5, label: "Node 5", title: "node 5 tootip text", value: 1 }
-        ],
-        edges: [
-          { from: 1, to: 2, label: "test" },
-          { from: 1, to: 3 },
-          { from: 2, to: 4 },
-          { from: 2, to: 5 }
-        ]
+        nodes: [],
+        edges: []
       },
       options : {
-        autoResize: false,
+        autoResize: true,
+        width: '100%',
+        height: '100%',
         nodes:{
           scaling: {
-            min: 14,
-            max: 30,
+            min: 10,
+            max: 50,
             label: {
               enabled: true,
-              min: 14,
-              max: 30,
+              min: 10,
+              max: 50,
               maxVisible: 30,
               drawThreshold: 5
             },
@@ -51,65 +66,338 @@ class GraphView extends Component {
           hierarchical: false
         },
         edges: {
-          color: "#000000"
+          color: "#000000",
+          arrows: {
+            to: {
+              enabled: false
+            },
+            from: {
+              enabled: false
+            }
+          }
         },
-        height: "500px"
-      }
+        physics:{
+          enabled: true,
+          // forceAtlas2Based: {
+          //   gravitationalConstant: -30,
+          //   centralGravity: 0.01,
+          //   springConstant: 0.8,
+          //   springLength: 1,
+          //   damping: 1.0,
+          //   avoidOverlap: 1.0
+          // },
+          adaptiveTimestep: true
+        },
+        configure: {
+          enabled: true,
+          showButton: true,
+          filter: 'physics',
+        }
+      },
+      params:{
+        hide_dead_sink: true,
+        threshold: 1.0
+      },
+      network: null,
     };
+    this.graph_orig = {
+        nodes: [],
+        edges: []
+    }
+    this.network_orig = null
+    this.color_id = 1
+    this.axios = axios.create({
+      baseURL: this.props.host + '/graph/get_from_data', 
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      responseType: 'json'  
+    });
 
-    this.events = {
-      select: function(event) {
-        console.log(event)
-        var { nodes, edges } = event;
-        console.log(nodes, edges)
-
-      }
-    };
-
-    this.update = this.update.bind(this)
-
+    this.events = this.events.bind(this)
+    this.updateGraph = this.updateGraph.bind(this)
+    this.applyParam = this.applyParam.bind(this)
+    this.threshChange = this.threshChange.bind(this)
+    this.showHideConfig = this.showHideConfig.bind(this)
+    this.showHideDeadSink = this.showHideDeadSink.bind(this)
+    this.setUserData = this.setUserData.bind(this);
   };
-  
-  update(){
+
+  events(event) {
+    console.log(event)
+    var { nodes, edges } = event;
+    console.log(nodes, edges)
+  };
+
+  setUserData(data) {
+    console.log("setuser", data);
+    this.setState({data});
+    // var new_data = [];
+    // for (var key in data) {
+    //   var row = { title: key, point: data[key] };
+    //   new_data.push(row);
+    // }
+  }
+
+  showHideConfig(){
+    var new_options = this.state.options
+    new_options.configure.enabled = !new_options.configure.enabled
+    console.log(this.state.options)
     this.setState({
-      graph: {
-        nodes: [
-          { id: 1, label: "ノード", title: "node 1 tootip text", color:"red", value: 30,
-          },
-          { id: 2, label: "Node 2", title: "node 2 tootip text", value: 50},
-          { id: 3, label: "Node 3", title: "node 3 tootip text", value: 10 },
-          { id: 4, label: "Node 4", title: "node 4 tootip text", value: 10 },
-          { id: 5, label: "Node 5", title: "node 5 tootip text", value: 10 },
-          { id: 6, label: "Node 5", title: "node 5 tootip text", value: 10 }
-        ],
-        edges: [
-          { from: 1, to: 2, label: "test" },
-          { from: 1, to: 3 },
-          { from: 2, to: 4 },
-          { from: 2, to: 5 },
-          { from: 6, to: 1 },
-          { from: 6, to: 2 },
-          { from: 6, to: 3 },
-          { from: 6, to: 4 },
-        ]
-      }
+      options: new_options,
+      graph: this.state.graph
     })
-  }  
+  }
+
+  showHideDeadSink(){
+    var new_params = this.state.params
+    new_params.hide_dead_sink = !this.state.params.hide_dead_sink
+    this.setState({
+      params: new_params
+    })
+    this.applyParam()
+  }
+
+  threshChange(event){
+    var new_params = this.state.params
+    new_params.threshold = event.target.value
+    console.log(this.state.params)
+    this.setState({
+      params: new_params
+    })
+    this.applyParam()
+  }
+
+  applyParam(){
+    var output_nodes = this.graph_orig.nodes.slice()
+    var output_edges = this.graph_orig.edges.slice()
+    // var output_nodes = this.state.graph.nodes.slice()
+    // var output_edges = this.state.graph.edges.slice()
+    // this.setState({graph: {}}) //don't know why need reset first
+
+    var point_sum = 0
+    var i = output_nodes.length
+    while(i--){
+        const nodeid = output_nodes[i]['id']
+        const point = output_nodes[i]['value']
+        const genre = output_nodes[i]['genre']
+        // console.log(output_nodes[i]['label'], output_nodes[i].hidden)
+        //just changing hidden seems not trigger redraw. need to change other property as well
+        // output_nodes[i]['hidden'] = true //!output_nodes[i].hidden
+        // output_nodes[i]['title'] =  output_nodes[i]['id'] + ' : ' + 
+        //                          '\n point:' + point  + 
+        //                          '\n genre:' + genre +
+        //                          '\n hidden:' + output_nodes[i]['hidden']
+
+
+        //remove dead sink
+        if(this.state.params.hide_dead_sink){
+          // const edges = this.state.network.getConnectedEdges(nodeid)
+          console.log(this.network_orig)
+          const edges = this.network_orig.getConnectedEdges(nodeid)
+          if(edges.length <= 1){
+            output_nodes.splice(i, 1);
+            // output_nodes[i]['hidden'] = true
+            // output_nodes[i]['mass'] = 0.01
+            console.log('remove dead sink', nodeid)
+            continue
+            // output_edges.pop() //todo
+          }
+          else{
+            // output_nodes[i]['hidden'] = false
+            // output_nodes[i]['mass'] = output_nodes[i]['value'] 
+          }
+        }
+
+        //remove by point threshold
+        if( point < this.state.params.threshold && genre=='attribute' ){
+          output_nodes.splice(i, 1);
+          // output_nodes[i]['hidden'] = true
+          // output_nodes[i]['mass'] = 0.01
+          console.log('removed by point', nodeid)  
+          continue
+        }
+        else{
+          // output_nodes[i]['hidden'] = false
+          // output_nodes[i]['mass'] = output_nodes[i]['value'] 
+        }
+        point_sum += point
+    }
+
+    //update non attribute node value
+    const ave = point_sum/output_nodes.length
+    for(var i in output_nodes){
+      const genre = output_nodes[i]['genre']
+      if(genre!='attribute'){
+        output_nodes[i]['value'] =  ave
+        // output_nodes[i]['value'] = this.state.params.threshold
+      }
+    }
+
+      // var graph = {
+      //             nodes: [
+      //               { id: 'test', label: "Node 1", color: "#e04141",                  
+      //                 value: 1, 
+      //                 title: 'test',
+      //                 shape: 'box', 
+      //                 genre: 'attribute',
+      //                 color: COLOR_PATTERN['attribute'],
+      //                 hidden: true,
+      //               },
+      //               { id: 'test1', label: "Node 2", color: "#e09c41",hidden: true, },
+      //               { id: 'test2', label: "Node 3", color: "#e0df41",hidden: true, },
+      //               { id: 'test3', label: "Node 4", color: "#7be041",hidden: true, },
+      //               { id: 'test4', label: "Node 5", color: "#41e0c9",hidden: true, }
+      //             ],
+      //             edges: [{ from: 'test', to: 'test1' }, { from: 'test', to: 'test2' }, { from: 'test1', to: 'test3' }, { from: 'test1', to: 'test4' }]
+      //           };
+
+
+      // console.log(JSON.stringify(graph.nodes), JSON.stringify(output_nodes))
+      // this.graph_orig = graph
+      // graph.nodes = output_nodes
+      // graph.edges = output_edges
+      // this.setState({graph: {nodes: graph.nodes, edges: graph.edges}})
+      
+      // output_nodes = graph.nodes
+      // output_edges = graph.edges
+
+    this.setState({
+      graph: {nodes: output_nodes, edges: output_edges} //res['data']['graph']
+    })
+
+    // console.log(this.state.graph.nodes)
+    console.log(this.state.network)
+  }
+
+  updateGraph(){
+    this.axios.post('',{
+        data: this.state.data
+      }).then(res => {
+        console.log('update graph')
+        var input_nodes = res['data']['graph']['nodes']
+        var input_edges = res['data']['graph']['edges']
+        var output_nodes = []
+        var output_edges = []
+        
+        var color_id = 1
+        for(var key in input_nodes){
+
+          // if input_nodes[key]['genre'] == 'attribute':
+          const genre = input_nodes[key]['genre']
+          if( !(genre in COLOR_PATTERN) ){
+            console.log('add genre: '+ input_nodes[key]['genre'])
+            COLOR_PATTERN[genre] = COLORS[this.color_id]
+            if(this.color_id >= COLORS.length){
+              this.color_id = 1
+            }
+            else{
+              this.color_id += 1
+            }
+          }
+
+          var shape = SHAPE_PATTERN['attribute']
+          var value = input_nodes[key]['point']
+          if(genre!='attribute'){
+              shape = SHAPE_PATTERN['program']            
+              value = this.state.params.threshold
+          }
+          var mass = value
+          if(genre!='attribute'){
+              mass = 10
+          }
+
+          var n = {
+            id: key, 
+            label: key, 
+            value: value, 
+            title: key + ' : \n' + 'point:' + input_nodes[key]['point']  + '\n genre:' + genre,
+            shape: shape, 
+            genre: genre,
+            color: COLOR_PATTERN[genre],
+            // hidden: false
+          }
+          output_nodes.push(n)
+          color_id += 1
+        }
+
+        for(var i in input_edges){
+          var e = {from: input_edges[i][0], to: input_edges[i][1]}
+          output_edges.push(e)
+        }
+
+        // var graph = {
+        //             nodes: [
+        //               { id: 'test', label: "Node 1", color: "#e04141",                  
+        //                 value: 1, 
+        //                 title: 'test',
+        //                 shape: 'box', 
+        //                 genre: 'attribute',
+        //                 color: COLOR_PATTERN['attribute'],
+        //                 hidden: false,
+        //               },
+        //               { id: 'test1', label: "Node 2", color: "#e09c41",hidden: false, },
+        //               { id: 'test2', label: "Node 3", color: "#e0df41",hidden: false, },
+        //               { id: 'test3', label: "Node 4", color: "#7be041",hidden: false, },
+        //               { id: 'test4', label: "Node 5", color: "#41e0c9",hidden: false, }
+        //             ],
+        //             edges: [{ from: 'test', to: 'test1' }, { from: 'test', to: 'test2' }, { from: 'test1', to: 'test3' }, { from: 'test1', to: 'test4' }]
+        //           };
+        // this.graph_orig = {nodes: graph.nodes.slice(), edges: graph.edges.slice()} 
+        // this.setState({graph})
+
+
+        this.graph_orig = {nodes: output_nodes.slice(), edges: output_edges.slice()} 
+        this.setState({
+          graph: {nodes: output_nodes, edges: output_edges} //res['data']['graph']
+        })
+
+        this.network_orig = Object.assign(
+          Object.create(Object.getPrototypeOf(this.state.network)),
+          this.state.network
+        );
+
+        this.applyParam()
+
+    }).catch(error => {
+      alert('Failed to update graph')
+      console.log(error)
+    }); 
+  } 
 
   render() {  
     return ( 
-      <div>
+      <div style={{ maxWidth: "100%", maxHeight: "60%", height: "100%" }}>
+         <Button variant="contained" color="primary" onClick={this.updateGraph} style={{width: "100%"}}>Update</Button>
+
+         <FormControl component="fieldset"  >
+          <FormGroup orientation="horizontal">
+            <FormControlLabel
+              control={<Checkbox checked={this.state.params.hide_dead_sink} onChange={this.showHideDeadSink} />}
+              label="Hide Dead Sink"
+            />
+            {/*
+            <FormControlLabel
+              control={<Checkbox checked={this.state.options.configure.enabled} onChange={this.showHideConfig} />}
+              label="Show Config"
+            />
+            */}
+          </FormGroup>
+         </FormControl>
+        <TextField label="point threshold" variant="filled" type='number' inputProps={{ min: "0" , step: "0.1" }} 
+          value = { this.state.params.threshold } onChange = { this.threshChange }
+        />
+
          <Graph
           graph={this.state.graph}
           options={this.state.options}
           events={this.events}
           getNetwork={network => {
+            this.state.network = network
             //  if you want access to vis.js network api you can set the state in a parent component using this property
           }}
+          ref={this.graphRef} 
         />
-        <button onClick = { this.update } >
-          test btn 
-        </button> 
       </div>
     );
   }
