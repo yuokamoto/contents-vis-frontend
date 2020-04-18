@@ -11,7 +11,13 @@ class App extends Component {
     super(props);
     this.state = {
       host:'http://localhost:5000',
-      userdata:{}, //user id and list of contents and points 
+      userdata:{
+        userId:'cMQfg3EB-7gpRzDLaIes',
+        data: {
+                "30minutes": {point: 0.33, checked: true}, 
+                "オサレもん": {point: 0.5, checked: false}
+              }
+      }, //user id and list of contents and points 
       contentdata:{} //graph data, nodes and edge
     };
     this.userClientRef = React.createRef();
@@ -19,7 +25,16 @@ class App extends Component {
     this.graphRef = React.createRef();
     this.getUserDataFromUser = this.getUserDataFromUser.bind(this);
     this.getUserDataFromSpreadsheet = this.getUserDataFromSpreadsheet.bind(this);
+
   };
+
+  
+  componentDidMount() {
+    this.userClientRef.current.setUserId(this.state.userdata['userId'])
+    this.userClientRef.current.setUserData(this.state.userdata['data'])
+    this.spreadSheetRef.current.setUserData(this.state.userdata['data'])
+    this.graphRef.current.setUserData(this.state.userdata['data'])
+  }
 
   // used by child component to get data
   getUserDataFromUser(data){

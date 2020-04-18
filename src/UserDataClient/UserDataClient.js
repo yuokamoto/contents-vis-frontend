@@ -11,7 +11,7 @@ export default class UserDataClient extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      userId:'5KENaHEBuOIHTk2RdJ6x',
+      userId:'',
       data:{},
     };
     this.axios = axios.create({
@@ -32,7 +32,7 @@ export default class UserDataClient extends Component {
 
   getUserData(e) {
     this.axios.get(this.state.userId).then(res => {
-        console.log('getuserdata')
+        console.log('getuserdata', res.data)
         this.setState({data:res.data})
         if(this.props.getUserData){
           this.props.getUserData(res.data)
@@ -44,8 +44,15 @@ export default class UserDataClient extends Component {
   }
 
   // used by outside of component
+  setUserId(id) {
+    console.log('setuser id')
+    this.setState({
+      userId: id
+    })
+  }
+  // used by outside of component
   setUserData(data) {
-    console.log('setuser')
+    console.log('setuser data')
     this.setState({
       data: data
     })

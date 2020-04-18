@@ -15,6 +15,7 @@ import Checkbox from '@material-ui/core/Checkbox';
 import 'vis-network/dist/vis-network.css'
 
 import axios from "axios";
+
 const COLORS = [
   'rgb(201, 203, 207)', //grey
   // 'rgb(255, 255, 255)', //white
@@ -26,7 +27,7 @@ const COLORS = [
   'rgb(153, 102, 255)',//purple
 ];
 const SHAPES = [
-  'ellipse',
+  'box',
   'box'
 ]
 var COLOR_PATTERN = {
@@ -78,14 +79,14 @@ class GraphView extends Component {
         },
         physics:{
           enabled: true,
-          // forceAtlas2Based: {
-          //   gravitationalConstant: -30,
-          //   centralGravity: 0.01,
-          //   springConstant: 0.8,
-          //   springLength: 1,
-          //   damping: 1.0,
-          //   avoidOverlap: 1.0
-          // },
+          forceAtlas2Based: {
+            gravitationalConstant: -30,
+            centralGravity: 0.01,
+            springConstant: 0.8,
+            springLength: 1,
+            damping: 1.0,
+            avoidOverlap: 1.0
+          },
           adaptiveTimestep: true
         },
         configure: {
@@ -95,8 +96,8 @@ class GraphView extends Component {
         }
       },
       params:{
-        hide_dead_sink: true,
-        threshold: 1.0
+        hide_dead_sink: false,
+        threshold: 0.0
       },
       network: null,
     };
@@ -171,9 +172,6 @@ class GraphView extends Component {
   applyParam(){
     var output_nodes = this.graph_orig.nodes.slice()
     var output_edges = this.graph_orig.edges.slice()
-    // var output_nodes = this.state.graph.nodes.slice()
-    // var output_edges = this.state.graph.edges.slice()
-    // this.setState({graph: {}}) //don't know why need reset first
 
     var point_sum = 0
     var i = output_nodes.length
@@ -181,19 +179,11 @@ class GraphView extends Component {
         const nodeid = output_nodes[i]['id']
         const point = output_nodes[i]['value']
         const genre = output_nodes[i]['genre']
-        // console.log(output_nodes[i]['label'], output_nodes[i].hidden)
-        //just changing hidden seems not trigger redraw. need to change other property as well
-        // output_nodes[i]['hidden'] = true //!output_nodes[i].hidden
-        // output_nodes[i]['title'] =  output_nodes[i]['id'] + ' : ' + 
-        //                          '\n point:' + point  + 
-        //                          '\n genre:' + genre +
-        //                          '\n hidden:' + output_nodes[i]['hidden']
-
 
         //remove dead sink
         if(this.state.params.hide_dead_sink){
           // const edges = this.state.network.getConnectedEdges(nodeid)
-          console.log(this.network_orig)
+          // console.log(this.network_orig)
           const edges = this.network_orig.getConnectedEdges(nodeid)
           if(edges.length <= 1){
             output_nodes.splice(i, 1);
@@ -221,46 +211,25 @@ class GraphView extends Component {
           // output_nodes[i]['hidden'] = false
           // output_nodes[i]['mass'] = output_nodes[i]['value'] 
         }
-        point_sum += point
+
+        if(genre=='attribute'){
+          point_sum += parseFloat(point)
+        }
+        // console.log(point, point_sum)
     }
 
     //update non attribute node value
     const ave = point_sum/output_nodes.length
+    console.log(point_sum, output_nodes.length)
     for(var i in output_nodes){
       const genre = output_nodes[i]['genre']
       if(genre!='attribute'){
-        output_nodes[i]['value'] =  ave
+        output_nodes[i]['value'] =  10//ave*2
+        // output_nodes[i]['mass'] = ave*2
+        console.log(output_nodes[i]['label'], output_nodes[i]['value'])
         // output_nodes[i]['value'] = this.state.params.threshold
       }
     }
-
-      // var graph = {
-      //             nodes: [
-      //               { id: 'test', label: "Node 1", color: "#e04141",                  
-      //                 value: 1, 
-      //                 title: 'test',
-      //                 shape: 'box', 
-      //                 genre: 'attribute',
-      //                 color: COLOR_PATTERN['attribute'],
-      //                 hidden: true,
-      //               },
-      //               { id: 'test1', label: "Node 2", color: "#e09c41",hidden: true, },
-      //               { id: 'test2', label: "Node 3", color: "#e0df41",hidden: true, },
-      //               { id: 'test3', label: "Node 4", color: "#7be041",hidden: true, },
-      //               { id: 'test4', label: "Node 5", color: "#41e0c9",hidden: true, }
-      //             ],
-      //             edges: [{ from: 'test', to: 'test1' }, { from: 'test', to: 'test2' }, { from: 'test1', to: 'test3' }, { from: 'test1', to: 'test4' }]
-      //           };
-
-
-      // console.log(JSON.stringify(graph.nodes), JSON.stringify(output_nodes))
-      // this.graph_orig = graph
-      // graph.nodes = output_nodes
-      // graph.edges = output_edges
-      // this.setState({graph: {nodes: graph.nodes, edges: graph.edges}})
-      
-      // output_nodes = graph.nodes
-      // output_edges = graph.edges
 
     this.setState({
       graph: {nodes: output_nodes, edges: output_edges} //res['data']['graph']
@@ -300,12 +269,14 @@ class GraphView extends Component {
           var value = input_nodes[key]['point']
           if(genre!='attribute'){
               shape = SHAPE_PATTERN['program']            
-              value = this.state.params.threshold
+              // value = this.state.params.threshold
           }
           var mass = value
-          if(genre!='attribute'){
-              mass = 10
-          }
+          // if(genre!='attribute'){
+          //     mass = 10
+          // }
+
+          console.log(key, value)
 
           var n = {
             id: key, 
@@ -325,27 +296,6 @@ class GraphView extends Component {
           var e = {from: input_edges[i][0], to: input_edges[i][1]}
           output_edges.push(e)
         }
-
-        // var graph = {
-        //             nodes: [
-        //               { id: 'test', label: "Node 1", color: "#e04141",                  
-        //                 value: 1, 
-        //                 title: 'test',
-        //                 shape: 'box', 
-        //                 genre: 'attribute',
-        //                 color: COLOR_PATTERN['attribute'],
-        //                 hidden: false,
-        //               },
-        //               { id: 'test1', label: "Node 2", color: "#e09c41",hidden: false, },
-        //               { id: 'test2', label: "Node 3", color: "#e0df41",hidden: false, },
-        //               { id: 'test3', label: "Node 4", color: "#7be041",hidden: false, },
-        //               { id: 'test4', label: "Node 5", color: "#41e0c9",hidden: false, }
-        //             ],
-        //             edges: [{ from: 'test', to: 'test1' }, { from: 'test', to: 'test2' }, { from: 'test1', to: 'test3' }, { from: 'test1', to: 'test4' }]
-        //           };
-        // this.graph_orig = {nodes: graph.nodes.slice(), edges: graph.edges.slice()} 
-        // this.setState({graph})
-
 
         this.graph_orig = {nodes: output_nodes.slice(), edges: output_edges.slice()} 
         this.setState({

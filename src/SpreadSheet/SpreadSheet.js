@@ -1,8 +1,15 @@
 import React, { Component } from "react";
 import axios from "axios";
 
-import MaterialTable from "material-table";
+import MaterialTable, { MTableToolbar } from 'material-table';
 import { Button } from "@material-ui/core";
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogContentText from '@material-ui/core/DialogContentText';
+import DialogTitle from '@material-ui/core/DialogTitle';
+
+import DataEdit from "../DataEdit/DataEdit"
 
 export default class SpreadSheet extends Component {
   constructor(props) {
@@ -17,15 +24,13 @@ export default class SpreadSheet extends Component {
           field: "wiki",
           editable: 'never',
           render: rowData => {
-            return <Button variant="outlined" size='small' onClick={(e) => {this.checkWiki(e, rowData)}}>Check Wiki</Button>;
+            return <Button variant="outlined" size='small' onClick={(e) => {this.handleCheckWikiOpen(e, rowData)}}>Check Wiki</Button>;
           }
         }
       ],
-      data: [
-              { title: "30minutes", point: 0.33, id:-1, tableData:{checked: true}}, 
-              { title: "あらびき団", point: 0.5, id:-1, tableData:{checked: false}}
-            ],
-      graph: {}
+      data: [],
+      graph: {},
+      checkWikiOpen: false,
     };
     this.axiosContents = axios.create({
       baseURL: this.props.host + "/contents/",
@@ -45,7 +50,8 @@ export default class SpreadSheet extends Component {
     this.setUserData = this.setUserData.bind(this);
     this.updateUserData = this.updateUserData.bind(this);
     this.onCheck = this.onCheck.bind(this);
-    this.checkWiki = this.checkWiki.bind(this);
+    this.handleCheckWikiOpen = this.handleCheckWikiOpen.bind(this);
+    this.handleCheckWikiClose = this.handleCheckWikiClose.bind(this);
   }
 
   setUserData(data) {
@@ -83,8 +89,14 @@ export default class SpreadSheet extends Component {
     });
   }
 
-  checkWiki(e, rowData) {
+  handleCheckWikiOpen(e, rowData) {
     console.log("todo: check Wiki",rowData['title']);
+    this.setState({checkWikiOpen:true})
+  }
+
+  handleCheckWikiClose() {
+    console.log("todo: close check Wiki");
+    this.setState({checkWikiOpen:false})
   }
 
   render() {
@@ -92,7 +104,6 @@ export default class SpreadSheet extends Component {
       <div style={{ maxWidth: "100%", maxHeight: "100%" }}>
         <MaterialTable
           title=""
-          options={{ paging: false }}
           columns={this.state.columns}
           data={this.state.data}
           editable={{
@@ -146,6 +157,13 @@ export default class SpreadSheet extends Component {
                 }, 1000);
               })
           }}
+          components={{
+              // Toolbar: props => (
+              //     <div style={{ backgroundColor: '#e8eaf5' }}>
+              //         <MTableToolbar {...props } />
+              //     </div>
+              // )
+          }}
           onSelectionChange={
             (rows) => {
               console.log(this.state.data)
@@ -153,6 +171,7 @@ export default class SpreadSheet extends Component {
             }
           }
           options={{
+            showTextRowsSelected: false,
             actionsColumnIndex: -1,
             exportButton: true,
             selection: true,
@@ -162,6 +181,18 @@ export default class SpreadSheet extends Component {
             })
           }}
         />
+       <Dialog
+        open={this.state.checkWikiOpen}
+        onClose={this.handleCheckWikiClose}
+        aria-labelledby="scroll-dialog-title"
+        aria-describedby="scroll-dialog-description"
+        fullScreen
+        >
+        <DialogTitle >Subscribe</DialogTitle>
+         <DialogContent >
+          <DataEdit />
+         </DialogContent>
+      </Dialog>
       </div>
     );
   }
