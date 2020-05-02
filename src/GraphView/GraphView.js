@@ -243,7 +243,7 @@ class GraphView extends Component {
     this.axios.post('',{
         data: this.state.data
       }).then(res => {
-        console.log('update graph')
+        console.log('update graph', this.state.data, res)
         var input_nodes = res['data']['graph']['nodes']
         var input_edges = res['data']['graph']['edges']
         var output_nodes = []

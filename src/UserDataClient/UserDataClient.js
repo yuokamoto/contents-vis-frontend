@@ -40,7 +40,7 @@ export default class UserDataClient extends Component {
       }).catch(error => {
         alert(this.state.userId+' is not exist')
         console.log(error)
-      }); 
+    }); 
   }
 
   // used by outside of component
@@ -80,7 +80,7 @@ export default class UserDataClient extends Component {
       }).catch(error => {
         alert(this.state.userId+' is not exist')
         console.log(error)
-      }); 
+    }); 
   }
   updateUserData(e) {
     console.log('userdatauser')

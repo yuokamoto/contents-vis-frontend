@@ -14,6 +14,7 @@
     "react-datasheet": "^1.4.1",
     "react-dom": "^16.13.0",
     "react-graph-vis": "^1.0.5",
+    "react-iframe": "^1.8.0",
     "react-scripts": "3.4.0"
   },
   "scripts": {
