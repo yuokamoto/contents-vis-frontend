@@ -10,7 +10,7 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      host:'http://localhost:5000',
+      host: window._env_.REACT_APP_BACKEND_URL,
       userdata:{
         userId:'cMQfg3EB-7gpRzDLaIes',
         data: {
@@ -28,8 +28,8 @@ class App extends Component {
 
   };
 
-  
   componentDidMount() {
+    console.log('Server IP:'+this.state.host)
     this.userClientRef.current.setUserId(this.state.userdata['userId'])
     this.userClientRef.current.setUserData(this.state.userdata['data'])
     this.spreadSheetRef.current.setUserData(this.state.userdata['data'])
