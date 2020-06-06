@@ -39,8 +39,16 @@ export default class DataEdit extends Component {
       end:{}
     }
 
-    this.axios = axios.create({
+    this.axios_contents = axios.create({
       baseURL: this.props.host + '/contents/', 
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      responseType: 'json'  
+    });
+
+    this.axios_wiki = axios.create({
+      baseURL: this.props.host + '/wiki/', 
       headers: {
         'Content-Type': 'application/json',
       },
@@ -58,13 +66,14 @@ export default class DataEdit extends Component {
   
   componentDidMount() {
     //get data from elastic
-    this.axios.get(this.state.title).then(res => {
+    this.axios_contents.get(this.state.title).then(res => {
         console.log('getcontents', res.data)
         this.setData(res.data['data'])
       }).catch(error => {
-        alert(this.state.title+' is not exist yet')
+        alert(this.state.title+' is not exist yet. Parsed from wiki.')
         this.setData([])
-        console.log(error)
+        this.parseData()
+        // console.log(error)
     }); 
   }
 
@@ -101,10 +110,9 @@ export default class DataEdit extends Component {
       progressOpen:true,
       parseConfirmOpen:false
     })
-    this.axios.put(this.state.title, 
+    this.axios_wiki.post('',
       {
         name: this.state.title,
-        data: {}
       }
       ).then(res => {
         // this.setState({
@@ -137,7 +145,7 @@ export default class DataEdit extends Component {
       res_data[this.state.data[i][0]['value']] = values
     }
     // console.log(res_data)
-    this.axios.put(this.state.title, 
+    this.axios_contents.put(this.state.title, 
       {
         name: this.state.title,
         data: res_data

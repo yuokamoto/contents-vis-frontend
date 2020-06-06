@@ -14,6 +14,11 @@ import IconButton from '@material-ui/core/IconButton';
 import Typography from '@material-ui/core/Typography';
 import CloseIcon from '@material-ui/icons/Close';
 import DataEdit from "../DataEdit/DataEdit"
+import ErrorOutline from '@material-ui/icons/ErrorOutline';
+// import PanoramaFishEyeIcon from '@material-ui/icons/PanoramaFishEye';
+import TripOriginIcon from '@material-ui/icons/TripOrigin';
+// import VerifiedUserIcon from '@material-ui/icons/VerifiedUser';
+import { red, green } from '@material-ui/core/colors';
 
 export default class SpreadSheet extends Component {
   constructor(props) {
@@ -44,7 +49,28 @@ export default class SpreadSheet extends Component {
             padding: '0px'
           }
         },
-        // { title: "WikiId", field: "id" }, //done by check wiki
+        { title: "Status", field: "status", initialEditValue: 0, width: '20px', editable: 'never',
+          cellStyle: {
+            width: '20px',
+            // maxWidth: '10px',
+            padding: '0px'
+          },
+          headerStyle: {
+            width: '20px',
+            // maxWidth: '10px',
+            padding: '0px'
+          },
+          render: rowData => {
+              // console.log(rowData)
+              var body;
+              if(rowData.status){
+                body = <TripOriginIcon style={{ color: green[500] }}/>
+              }else{
+                body = <ErrorOutline style={{ color: red[500] }}/>
+              }
+              return body
+            }
+        },
         {
           title: "", field: "wiki", editable: 'never',
           cellStyle: {
@@ -87,7 +113,8 @@ export default class SpreadSheet extends Component {
       responseType: "json"
     });
 
-    this.selectedTitle = '';
+    this.editingData = {};
+    this.oldData = {};
     this.setUserData = this.setUserData.bind(this);
     this.checkDataExist = this.checkDataExist.bind(this);
     this.updateUserData = this.updateUserData.bind(this);
@@ -96,18 +123,20 @@ export default class SpreadSheet extends Component {
     this.handleCheckWikiClose = this.handleCheckWikiClose.bind(this);
   }
 
-  setUserData(data) {
+  async setUserData(data) {
     console.log("setuser", data);
     var new_data = [];
     for (var key in data) {
       var tableData = {checked: data[key]['checked'] ? true : false }
-      var row = { title: key, id: data[key]['id'], point: data[key]['point'], tableData:tableData };
-      new_data.push(row);
+      await this.checkDataExist(key).then(exist => {
+        var row = { title: key, id: data[key]['id'], point: data[key]['point'], tableData:tableData, status: exist };
+        new_data.push(row);
+      })
     }
     this.setState({
       data: new_data
     });
-    console.log(new_data)
+    // console.log(new_data)
   }
 
   updateUserData(data) {
@@ -133,12 +162,40 @@ export default class SpreadSheet extends Component {
 
   handleCheckWikiOpen(e, rowData) {
     if(typeof rowData !== 'undefined' && rowData['title']!==''){
-      this.selectedTitle = rowData['title']
+      this.editingData = rowData
+      this.oldData = rowData
       this.setState({checkWikiOpen:true})
     }
   }
 
-  handleCheckWikiClose() {
+  async handleCheckWikiClose() {
+    if('title' in this.editingData){
+      const data = this.state.data;
+      await this.checkDataExist(this.editingData['title']).then(exist => {
+        var newData = this.editingData
+        newData['status'] = exist
+        if('id' in this.oldData){
+          const index = data.indexOf(this.oldData);
+          newData['id'] = this.oldData['id'] //temp
+          newData['tableData'] = this.oldData['tableData']
+          newData['title'] = newData['title'].trim()
+          delete newData['tableData']['editing']
+          data[index] = newData;
+        }else{
+          newData['id'] = -1 //temp
+          newData['tableData'] = {
+            checked: true
+          }
+          newData['point'] = parseFloat(newData['point'])
+          newData['title'] = newData['title'].trim()
+          data.push(newData);
+        }
+        this.updateUserData(data);
+        this.setState({ data });
+      })
+    }
+    this.editingData={}
+    this.oldData={}
 
     this.setState({checkWikiOpen:false})
   }
@@ -167,64 +224,60 @@ export default class SpreadSheet extends Component {
             onRowAdd: newData =>
               new Promise((resolve, reject) => {
                 this.checkDataExist(newData['title']).then( exist => {
-                  if(exist){
-                     setTimeout(() => {
-                      {
-                        const data = this.state.data;
-                        newData['id'] = -1 //temp
-                        newData['tableData'] = {
-                          checked: true
-                        }
-                        newData['point'] = parseFloat(newData['point'])
-                        newData['title'] = newData['title'].trim()
-                        data.push(newData);
-                        this.updateUserData(data);
-                        this.setState({ data }, () => resolve());
+                  newData['status'] =exist
+                  setTimeout(() => {
+                    if(exist){ 
+                      const data = this.state.data;
+                      newData['id'] = -1 //temp
+                      newData['tableData'] = {
+                        checked: true
                       }
-                      resolve();
-                    }, 1000);
-                  } 
-                  else{
-                    newData['title'] = newData['title'].trim()
-                    this.selectedTitle = newData['title']
-                    this.setState({
-                      editConfirmOpen:true
-                    })
-                    resolve()
-                  }
+                      newData['point'] = parseFloat(newData['point'])
+                      newData['title'] = newData['title'].trim()
+                      data.push(newData);
+                      this.updateUserData(data);
+                      this.setState({ data }, () => resolve());
+                    }else{
+                      newData['title'] = newData['title'].trim()
+                      this.editingData = newData
+                      this.oldData = {}
+                      this.setState({
+                        editConfirmOpen:true
+                      })
+                    }
+                    resolve();
+                  }, 1000);  
                 })
               }),
             onRowUpdate: (newData, oldData) =>
               new Promise((resolve, reject) => {
                 this.checkDataExist(newData['title']).then( exist => {
-                  if(exist){
-                    setTimeout(() => {
-                      {
-                        const data = this.state.data;
-                        const index = data.indexOf(oldData);
+                  newData['status'] =exist
+                  setTimeout(() => {
+                    if(exist){
+                      const data = this.state.data;
+                      const index = data.indexOf(oldData);
 
-                        //data which is not aupdate by input
-                        newData['id'] = oldData['id'] //temp
-                        newData['tableData'] = oldData['tableData']
-                        newData['title'] = newData['title'].trim()
-                        delete newData['tableData']['editing']
-                        data[index] = newData;
-                        
-                        // console.log(oldData, newData)
-                        this.updateUserData(data);
-                        this.setState({ data }, () => resolve());
-                      }
-                      resolve();
-                    }, 1000);
-                  } 
-                  else{
-                    newData['title'] = newData['title'].trim()
-                    this.selectedTitle = newData['title']
-                    this.setState({
-                      editConfirmOpen:true
-                    })
-                    resolve()
-                  }
+                      //data which is not aupdate by input
+                      newData['id'] = oldData['id'] //temp
+                      newData['tableData'] = oldData['tableData']
+                      newData['title'] = newData['title'].trim()
+                      delete newData['tableData']['editing']
+                      data[index] = newData;
+                      
+                      // console.log(oldData, newData)
+                      this.updateUserData(data);
+                      this.setState({ data }, () => resolve());
+                    }else{
+                      newData['title'] = newData['title'].trim()
+                      this.editingData = newData
+                      this.oldData = oldData
+                      this.setState({
+                        editConfirmOpen:true
+                      })
+                    }
+                    resolve();
+                  }, 1000);
                 })
               }),
             onRowDelete: oldData =>
@@ -250,28 +303,52 @@ export default class SpreadSheet extends Component {
           }}
           onSelectionChange={
             (rows) => {
-              console.log(this.state.data)
+              // console.log(this.state.data)
               this.updateUserData(this.state.data) 
             }
           }
           options={{
-            padding: 'checkbox',
+            padding: 'dense',
+            addRowPosition: 'first',
             showTextRowsSelected: false,
+            howSelectAllCheckbox: false,
+            searchFieldAlignment: 'left',
+            // toolbarButtonAlignment: 'left',
             actionsColumnIndex: -1,
-            exportButton: true,
+            // exportButton: true,
             selection: true,
             selectionProps: rowData => ({
               disabled: rowData.name === "Mehmet",
               color: "primary"
             })
           }}
+          actions={[
+            {
+              tooltip: 'Add',
+              icon: 'add',
+              onClick: (evt, data) => {
+                const rowData = this.state.data;
+                var newData = {}
+                newData['id'] = -1 //temp
+                newData['tableData'] = {
+                  checked: false
+                }
+                newData['point'] = 0
+                newData['title'] = ''
+                newData['status'] = false
+                rowData.push(newData);
+                this.updateUserData(rowData);
+                this.setState({ data: rowData });
+              }
+            }
+          ]}
         />
         <Dialog
           open={this.state.editConfirmOpen}
           aria-labelledby="alert-dialog-title"
           aria-describedby="alert-dialog-description"
         >
-          <DialogTitle id="alert-dialog-title">{"No \""+this.selectedTitle+'\" data found. Edit?'}</DialogTitle>
+          <DialogTitle id="alert-dialog-title">{"No \""+this.editingData['title']+'\" data found. Edit?'}</DialogTitle>
           <DialogContent>
           </DialogContent>
           <DialogActions>
@@ -307,7 +384,7 @@ export default class SpreadSheet extends Component {
           </AppBar>
            <DialogContent >
             <DataEdit 
-              title = {this.selectedTitle}
+              title = {this.editingData['title']}
               host={this.props.host}
             />
            </DialogContent>
