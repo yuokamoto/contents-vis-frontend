@@ -12,10 +12,10 @@ class App extends Component {
     this.state = {
       host: window._env_.REACT_APP_BACKEND_URL,
       userdata:{
-        userId:'cMQfg3EB-7gpRzDLaIes',
+        userId: '', //'cMQfg3EB-7gpRzDLaIes',
         data: {
                 "30minutes": {point: 0.33, checked: true}, 
-                "オサレもん": {point: 0.5, checked: false}
+                "オサレもん": {point: 0.5, checked: false},
               }
       }, //user id and list of contents and points 
       contentdata:{} //graph data, nodes and edge

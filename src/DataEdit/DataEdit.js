@@ -140,11 +140,14 @@ export default class DataEdit extends Component {
       for(var j in this.state.data[i]){
         if(j > 0 && this.state.data[i][j]['value'] !== '') {
           values.push(this.state.data[i][j]['value'])
-        } 
+        }
       }
-      res_data[this.state.data[i][0]['value']] = values
+      if(this.state.data[i][0]['value'] !== '' && values.length>0){
+        res_data[this.state.data[i][0]['value']] = values
+      }
     }
-    // console.log(res_data)
+    // console.log(JSON.stringify(res_data))
+    console.log(res_data)
     this.axios_contents.put(this.state.title, 
       {
         name: this.state.title,
@@ -165,9 +168,9 @@ export default class DataEdit extends Component {
   } 
 
   addRow(){
-    const webpagehtml = document.getElementById('wikiPage')
-    console.log(webpagehtml.contentWindow)
-    console.log(webpagehtml.attributes)
+    // const webpagehtml = document.getElementById('wikiPage')
+    // console.log(webpagehtml.contentWindow)
+    // console.log(webpagehtml.attributes)
     // console.log(webpagehtml.getElementsByTagName('header'))
     var new_data = this.state.data.slice()
     var row = Array(new_data[0].length).fill({value:'', className:'value'})
